@@ -1,0 +1,59 @@
+import { Toaster } from "@/components/ui/sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { useState } from "react";
+import { Navbar } from "./components/Navbar";
+import { Dashboard } from "./pages/Dashboard";
+import { StructureDetail } from "./pages/StructureDetail";
+
+export type AppPage = { page: "dashboard" } | { page: "structure"; id: string };
+
+export default function App() {
+  const [currentPage, setCurrentPage] = useState<AppPage>({
+    page: "dashboard",
+  });
+
+  function navigate(page: AppPage) {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  return (
+    <TooltipProvider>
+      <div className="min-h-screen bg-background flex flex-col">
+        <Navbar
+          onNavigateHome={() => navigate({ page: "dashboard" })}
+          currentPage={currentPage}
+        />
+
+        <main className="flex-1">
+          {currentPage.page === "dashboard" && (
+            <Dashboard
+              onSelectStructure={(id) => navigate({ page: "structure", id })}
+            />
+          )}
+          {currentPage.page === "structure" && (
+            <StructureDetail
+              structureId={currentPage.id}
+              onBack={() => navigate({ page: "dashboard" })}
+            />
+          )}
+        </main>
+
+        <footer className="border-t border-border bg-stone-100 py-5 px-6 mt-auto">
+          <p className="text-center text-sm text-muted-foreground font-body">
+            © {new Date().getFullYear()}. Built with love using{" "}
+            <a
+              href={`https://caffeine.ai?utm_source=caffeine-footer&utm_medium=referral&utm_content=${encodeURIComponent(window.location.hostname)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline hover:text-foreground transition-colors"
+            >
+              caffeine.ai
+            </a>
+          </p>
+        </footer>
+      </div>
+      <Toaster richColors position="top-right" />
+    </TooltipProvider>
+  );
+}

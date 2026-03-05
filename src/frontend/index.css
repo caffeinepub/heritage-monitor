@@ -1,0 +1,136 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Fraunces (Display) ── */
+@font-face {
+  font-family: "Fraunces";
+  src: url("/assets/fonts/Fraunces.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* ── Cabinet Grotesk (Body) ── */
+@font-face {
+  font-family: "Cabinet Grotesk";
+  src: url("/assets/fonts/CabinetGrotesk-Variable.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* ── JetBrains Mono (Mono) ── */
+@font-face {
+  font-family: "JetBrains Mono";
+  src: url("/assets/fonts/JetBrainsMono[wght].woff2") format("woff2");
+  font-weight: 100 800;
+  font-style: normal;
+  font-display: swap;
+}
+
+@layer base {
+  :root {
+    --radius: 0.375rem;
+
+    /* Stone / Parchment Heritage Palette */
+    --background: 0.97 0.008 72;
+    --foreground: 0.22 0.025 55;
+
+    --card: 0.99 0.005 75;
+    --card-foreground: 0.22 0.025 55;
+
+    --popover: 0.99 0.005 75;
+    --popover-foreground: 0.22 0.025 55;
+
+    /* Terracotta primary */
+    --primary: 0.52 0.13 42;
+    --primary-foreground: 0.99 0.005 75;
+
+    /* Stone secondary */
+    --secondary: 0.91 0.018 72;
+    --secondary-foreground: 0.35 0.04 55;
+
+    --muted: 0.93 0.012 72;
+    --muted-foreground: 0.52 0.025 60;
+
+    /* Warm accent (amber-gold) */
+    --accent: 0.78 0.14 68;
+    --accent-foreground: 0.22 0.025 55;
+
+    --destructive: 0.55 0.22 25;
+    --destructive-foreground: 0.99 0.005 75;
+
+    --border: 0.86 0.025 70;
+    --input: 0.88 0.02 70;
+    --ring: 0.52 0.13 42;
+
+    /* Condition status colors */
+    --condition-good: 0.65 0.15 145;
+    --condition-fair: 0.72 0.16 80;
+    --condition-poor: 0.65 0.18 50;
+    --condition-critical: 0.55 0.22 25;
+
+    /* Chart colors */
+    --chart-1: 0.52 0.13 42;
+    --chart-2: 0.65 0.15 145;
+    --chart-3: 0.72 0.16 80;
+    --chart-4: 0.65 0.18 50;
+    --chart-5: 0.55 0.22 25;
+
+    --sidebar: 0.95 0.015 70;
+    --sidebar-foreground: 0.22 0.025 55;
+    --sidebar-primary: 0.52 0.13 42;
+    --sidebar-primary-foreground: 0.99 0.005 75;
+    --sidebar-accent: 0.91 0.018 72;
+    --sidebar-accent-foreground: 0.35 0.04 55;
+    --sidebar-border: 0.86 0.025 70;
+    --sidebar-ring: 0.52 0.13 42;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-body;
+    font-feature-settings: "liga" 1, "kern" 1;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-display;
+  }
+}
+
+/* Texture overlay for depth */
+.parchment-texture {
+  position: relative;
+}
+.parchment-texture::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 0;
+  border-radius: inherit;
+}
+
+/* Stone grain header */
+.stone-header {
+  background: oklch(0.25 0.03 60);
+  background-image:
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      oklch(0.27 0.03 60 / 0.3) 2px,
+      oklch(0.27 0.03 60 / 0.3) 3px
+    );
+}
+
+/* Condition bar colors */
+.bar-good { background-color: oklch(var(--condition-good)); }
+.bar-fair { background-color: oklch(var(--condition-fair)); }
+.bar-poor { background-color: oklch(var(--condition-poor)); }
+.bar-critical { background-color: oklch(var(--condition-critical)); }
