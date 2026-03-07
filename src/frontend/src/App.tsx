@@ -41,15 +41,7 @@ export default function App() {
 
         <footer className="border-t border-border bg-stone-100 py-5 px-6 mt-auto">
           <p className="text-center text-sm text-muted-foreground font-body">
-            © {new Date().getFullYear()}. Built with love using{" "}
-            <a
-              href={`https://caffeine.ai?utm_source=caffeine-footer&utm_medium=referral&utm_content=${encodeURIComponent(window.location.hostname)}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="underline hover:text-foreground transition-colors"
-            >
-              caffeine.ai
-            </a>
+            © {new Date().getFullYear()} Heritage Monitor. All rights reserved.
           </p>
         </footer>
       </div>

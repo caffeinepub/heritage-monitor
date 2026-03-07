@@ -233,19 +233,21 @@ export function OverviewTab({ structure }: OverviewTabProps) {
   const [photoAnalysis, setPhotoAnalysis] = useState<
     Record<string, PhotoAnalysisState>
   >({});
-  const photosLoadedRef = useRef(false);
+  const photosLoadedRef = useRef<string | null>(null);
   const [loadingPhotos, setLoadingPhotos] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { uploadPhoto, isUploading, uploadProgress } = useBlobStorage();
   const { actor } = useActor();
 
-  // Load saved photos from backend on mount
+  // Load saved photos from backend whenever actor becomes available or structure changes
   useEffect(() => {
-    if (!actor || photosLoadedRef.current) return;
+    if (!actor) return;
+    // Already loaded for this structure in this session
+    if (photosLoadedRef.current === structure.id) return;
 
     async function loadSavedPhotos() {
       if (!actor) return;
-      photosLoadedRef.current = true;
+      photosLoadedRef.current = structure.id;
       setLoadingPhotos(true);
       try {
         const savedDefects = await actor.getImageDefectsByStructure(

@@ -5,27 +5,27 @@ import { useActor } from "./useActor";
 // ── Structure Queries ──────────────────────────────────────────────────────
 
 export function useListStructures() {
-  const { actor, isFetching } = useActor();
+  const { actor } = useActor();
   return useQuery<Structure[]>({
     queryKey: ["structures"],
     queryFn: async () => {
       if (!actor) return [];
       return actor.listStructures();
     },
-    enabled: !!actor && !isFetching,
+    enabled: !!actor,
     refetchInterval: 10000,
   });
 }
 
 export function useGetStructure(id: string) {
-  const { actor, isFetching } = useActor();
+  const { actor } = useActor();
   return useQuery<Structure>({
     queryKey: ["structure", id],
     queryFn: async () => {
       if (!actor) throw new Error("No actor");
       return actor.getStructure(id);
     },
-    enabled: !!actor && !isFetching && !!id,
+    enabled: !!actor && !!id,
     refetchInterval: 10000,
   });
 }
@@ -76,27 +76,27 @@ export function useDeleteStructure() {
 // ── Damage Entry Queries ───────────────────────────────────────────────────
 
 export function useListDamageEntries(structureId: string) {
-  const { actor, isFetching } = useActor();
+  const { actor } = useActor();
   return useQuery<DamageEntry[]>({
     queryKey: ["damageEntries", structureId],
     queryFn: async () => {
       if (!actor) return [];
       return actor.listDamageEntriesByStructure(structureId);
     },
-    enabled: !!actor && !isFetching && !!structureId,
+    enabled: !!actor && !!structureId,
     refetchInterval: 10000,
   });
 }
 
 export function useGetDamageSummary(structureId: string) {
-  const { actor, isFetching } = useActor();
+  const { actor } = useActor();
   return useQuery({
     queryKey: ["damageSummary", structureId],
     queryFn: async () => {
       if (!actor) return { low: 0n, medium: 0n, high: 0n };
       return actor.getDamageSummary(structureId);
     },
-    enabled: !!actor && !isFetching && !!structureId,
+    enabled: !!actor && !!structureId,
     refetchInterval: 10000,
   });
 }
@@ -149,14 +149,14 @@ export function useDeleteDamageEntry() {
 export function usePreservationRecommendations(
   category: DamageCategory | null,
 ) {
-  const { actor, isFetching } = useActor();
+  const { actor } = useActor();
   return useQuery<string>({
     queryKey: ["preservation", category],
     queryFn: async () => {
       if (!actor || !category) return "";
       return actor.getPreservationRecommendations(category);
     },
-    enabled: !!actor && !isFetching && !!category,
+    enabled: !!actor && !!category,
     staleTime: 1000 * 60 * 60, // 1 hour
   });
 }
