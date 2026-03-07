@@ -5,28 +5,32 @@ import { useActor } from "./useActor";
 // ── Structure Queries ──────────────────────────────────────────────────────
 
 export function useListStructures() {
-  const { actor } = useActor();
+  const { actor, isFetching: actorFetching } = useActor();
   return useQuery<Structure[]>({
     queryKey: ["structures"],
     queryFn: async () => {
       if (!actor) return [];
       return actor.listStructures();
     },
-    enabled: !!actor,
+    // Allow query to run as soon as actor resolves (including anonymous actor)
+    enabled: !actorFetching,
     refetchInterval: 10000,
+    // Keep previous data visible while refetching
+    placeholderData: (prev) => prev,
   });
 }
 
 export function useGetStructure(id: string) {
-  const { actor } = useActor();
+  const { actor, isFetching: actorFetching } = useActor();
   return useQuery<Structure>({
     queryKey: ["structure", id],
     queryFn: async () => {
       if (!actor) throw new Error("No actor");
       return actor.getStructure(id);
     },
-    enabled: !!actor && !!id,
+    enabled: !actorFetching && !!id,
     refetchInterval: 10000,
+    placeholderData: (prev) => prev,
   });
 }
 

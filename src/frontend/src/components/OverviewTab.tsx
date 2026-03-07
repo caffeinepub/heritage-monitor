@@ -233,21 +233,32 @@ export function OverviewTab({ structure }: OverviewTabProps) {
   const [photoAnalysis, setPhotoAnalysis] = useState<
     Record<string, PhotoAnalysisState>
   >({});
+  // Track "structureId + actorPrincipal" so photos reload after login/logout or structure change
   const photosLoadedRef = useRef<string | null>(null);
   const [loadingPhotos, setLoadingPhotos] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { uploadPhoto, isUploading, uploadProgress } = useBlobStorage();
-  const { actor } = useActor();
+  const { actor, isFetching: actorFetching } = useActor();
 
-  // Load saved photos from backend whenever actor becomes available or structure changes
+  // Reset photos state when the structure changes so we don't show stale data
+  // biome-ignore lint/correctness/useExhaustiveDependencies: intentionally run only when structure.id changes
   useEffect(() => {
-    if (!actor) return;
-    // Already loaded for this structure in this session
-    if (photosLoadedRef.current === structure.id) return;
+    setPhotos([]);
+    setPhotoAnalysis({});
+    photosLoadedRef.current = null;
+  }, [structure.id]);
+
+  // Load saved photos from backend whenever actor becomes available or structure changes.
+  // Use a composite key so photos reload after login/logout (actor principal changes).
+  useEffect(() => {
+    if (!actor || actorFetching) return;
+    const cacheKey = `${structure.id}`;
+    // Already loaded for this exact structure + actor combo in this session
+    if (photosLoadedRef.current === cacheKey) return;
 
     async function loadSavedPhotos() {
       if (!actor) return;
-      photosLoadedRef.current = structure.id;
+      photosLoadedRef.current = cacheKey;
       setLoadingPhotos(true);
       try {
         const savedDefects = await actor.getImageDefectsByStructure(
@@ -324,7 +335,7 @@ export function OverviewTab({ structure }: OverviewTabProps) {
     }
 
     loadSavedPhotos();
-  }, [actor, structure.id]);
+  }, [actor, actorFetching, structure.id]);
 
   const overallLevel = overallConditionLevel(structure.currentCondition);
   const overallOrig = averageCondition(structure.originalCondition);
