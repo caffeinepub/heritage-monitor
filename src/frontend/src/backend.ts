@@ -170,6 +170,7 @@ export interface backendInterface {
     addDamageEntry(entry: DamageEntry): Promise<void>;
     addStructure(structure: Structure): Promise<void>;
     assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
+    assignRole(user: Principal, role: UserRole): Promise<void>;
     deleteDamageEntry(id: string): Promise<void>;
     deleteImageDefectsForPhoto(photoHash: string): Promise<void>;
     deleteStructure(id: string): Promise<void>;
@@ -182,12 +183,13 @@ export interface backendInterface {
     getPreservationRecommendations(category: DamageCategory): Promise<string>;
     getStructure(id: string): Promise<Structure>;
     getUserProfile(user: Principal): Promise<UserProfile | null>;
+    getUserRole(): Promise<UserRole>;
     isCallerAdmin(): Promise<boolean>;
     listDamageEntriesByStructure(structureId: string): Promise<Array<DamageEntry>>;
     listStructures(): Promise<Array<Structure>>;
     listStructuresByLocation(location: string): Promise<Array<Structure>>;
     saveCallerUserProfile(profile: UserProfile): Promise<void>;
-    saveImageDefects(structureId: string, photoHash: string, defects: Array<ImageDefect>): Promise<void>;
+    saveImageDefects(_structureId: string, photoHash: string, defects: Array<ImageDefect>): Promise<void>;
     updateDamageEntry(entry: DamageEntry): Promise<void>;
     updateStructure(structure: Structure): Promise<void>;
 }
@@ -331,6 +333,20 @@ export class Backend implements backendInterface {
             }
         } else {
             const result = await this.actor.assignCallerUserRole(arg0, to_candid_UserRole_n14(this._uploadFile, this._downloadFile, arg1));
+            return result;
+        }
+    }
+    async assignRole(arg0: Principal, arg1: UserRole): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.assignRole(arg0, to_candid_UserRole_n14(this._uploadFile, this._downloadFile, arg1));
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.assignRole(arg0, to_candid_UserRole_n14(this._uploadFile, this._downloadFile, arg1));
             return result;
         }
     }
@@ -500,6 +516,20 @@ export class Backend implements backendInterface {
         } else {
             const result = await this.actor.getUserProfile(arg0);
             return from_candid_opt_n16(this._uploadFile, this._downloadFile, result);
+        }
+    }
+    async getUserRole(): Promise<UserRole> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getUserRole();
+                return from_candid_UserRole_n17(this._uploadFile, this._downloadFile, result);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getUserRole();
+            return from_candid_UserRole_n17(this._uploadFile, this._downloadFile, result);
         }
     }
     async isCallerAdmin(): Promise<boolean> {

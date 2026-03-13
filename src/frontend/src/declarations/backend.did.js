@@ -108,6 +108,7 @@ export const idlService = IDL.Service({
   'addDamageEntry' : IDL.Func([DamageEntry], [], []),
   'addStructure' : IDL.Func([Structure], [], []),
   'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
+  'assignRole' : IDL.Func([IDL.Principal, UserRole], [], []),
   'deleteDamageEntry' : IDL.Func([IDL.Text], [], []),
   'deleteImageDefectsForPhoto' : IDL.Func([IDL.Text], [], []),
   'deleteStructure' : IDL.Func([IDL.Text], [], []),
@@ -136,6 +137,7 @@ export const idlService = IDL.Service({
       [IDL.Opt(UserProfile)],
       ['query'],
     ),
+  'getUserRole' : IDL.Func([], [UserRole], ['query']),
   'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
   'listDamageEntriesByStructure' : IDL.Func(
       [IDL.Text],
@@ -261,6 +263,7 @@ export const idlFactory = ({ IDL }) => {
     'addDamageEntry' : IDL.Func([DamageEntry], [], []),
     'addStructure' : IDL.Func([Structure], [], []),
     'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
+    'assignRole' : IDL.Func([IDL.Principal, UserRole], [], []),
     'deleteDamageEntry' : IDL.Func([IDL.Text], [], []),
     'deleteImageDefectsForPhoto' : IDL.Func([IDL.Text], [], []),
     'deleteStructure' : IDL.Func([IDL.Text], [], []),
@@ -289,6 +292,7 @@ export const idlFactory = ({ IDL }) => {
         [IDL.Opt(UserProfile)],
         ['query'],
       ),
+    'getUserRole' : IDL.Func([], [UserRole], ['query']),
     'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
     'listDamageEntriesByStructure' : IDL.Func(
         [IDL.Text],

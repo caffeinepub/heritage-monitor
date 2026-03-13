@@ -38,12 +38,6 @@ export default function App() {
             />
           )}
         </main>
-
-        <footer className="border-t border-border bg-stone-100 py-5 px-6 mt-auto">
-          <p className="text-center text-sm text-muted-foreground font-body">
-            © {new Date().getFullYear()} Heritage Monitor. All rights reserved.
-          </p>
-        </footer>
       </div>
       <Toaster richColors position="top-right" />
     </TooltipProvider>

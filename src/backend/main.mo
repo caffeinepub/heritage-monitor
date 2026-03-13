@@ -1,55 +1,36 @@
+import Nat "mo:core/Nat";
 import Text "mo:core/Text";
 import Map "mo:core/Map";
 import Array "mo:core/Array";
-import Order "mo:core/Order";
+import Principal "mo:core/Principal";
 import List "mo:core/List";
-import Time "mo:core/Time";
 import Iter "mo:core/Iter";
+import Order "mo:core/Order";
+import Time "mo:core/Time";
 import Runtime "mo:core/Runtime";
 import MixinStorage "blob-storage/Mixin";
 import MixinAuthorization "authorization/MixinAuthorization";
 import AccessControl "authorization/access-control";
-import Principal "mo:core/Principal";
+import Migration "migration";
 
-
-
+(with migration = Migration.run)
 actor {
   // Storage integration for blob and image storage
   include MixinStorage();
 
-  // Initialize the access control system
-  let accessControlState = AccessControl.initState();
+  // Access control state (var)
+  var accessControlState = AccessControl.initState();
+
+  // Access control integration (uses var)
   include MixinAuthorization(accessControlState);
 
-  // User profile type
+  // ############# Data Types #############
+
   public type UserProfile = {
     name : Text;
   };
 
-  let userProfiles = Map.empty<Principal, UserProfile>();
-
-  public query ({ caller }) func getCallerUserProfile() : async ?UserProfile {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can access profiles");
-    };
-    userProfiles.get(caller);
-  };
-
-  public query ({ caller }) func getUserProfile(user : Principal) : async ?UserProfile {
-    if (caller != user and not AccessControl.isAdmin(accessControlState, caller)) {
-      Runtime.trap("Unauthorized: Can only view your own profile");
-    };
-    userProfiles.get(user);
-  };
-
-  public shared ({ caller }) func saveCallerUserProfile(profile : UserProfile) : async () {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can save profiles");
-    };
-    userProfiles.add(caller, profile);
-  };
-
-  type ConditionStatus = {
+  public type ConditionStatus = {
     foundation : Int;
     walls : Int;
     roof : Int;
@@ -86,18 +67,6 @@ actor {
     recordedBy : Principal;
   };
 
-  module Structure {
-    public func compare(a : Structure, b : Structure) : Order.Order {
-      Text.compare(a.id, b.id);
-    };
-  };
-
-  module DamageEntry {
-    public func compare(a : DamageEntry, b : DamageEntry) : Order.Order {
-      Text.compare(a.id, b.id);
-    };
-  };
-
   public type ImageDefect = {
     id : Text;
     structureId : Text;
@@ -108,13 +77,55 @@ actor {
     detectedAt : Time.Time;
   };
 
-  let structures = Map.empty<Text, Structure>();
-  let damages = Map.empty<Text, DamageEntry>();
-  let imageDefects = Map.empty<Text, [ImageDefect]>();
+  // ############# Stable Data Storage #############
 
-  public shared ({ caller }) func addStructure(structure : Structure) : async () {
+  var userProfiles = Map.empty<Principal, UserProfile>();
+  var structures = Map.empty<Text, Structure>();
+  var damages = Map.empty<Text, DamageEntry>();
+  var imageDefects = Map.empty<Text, [ImageDefect]>();
+
+  // ######### AUTHORIZATION FUNCTIONS #########
+
+  public query ({ caller }) func getUserRole() : async AccessControl.UserRole {
+    if (not AccessControl.hasPermission(accessControlState, caller, #user)) {
+      Runtime.trap("Unauthorized: Only users can access role data");
+    };
+    AccessControl.getUserRole(accessControlState, caller);
+  };
+
+  public shared ({ caller }) func assignRole(user : Principal, role : AccessControl.UserRole) : async () {
+    if (not AccessControl.hasPermission(accessControlState, caller, #admin)) {
+      Runtime.trap("Unauthorized: Only admins can assign roles");
+    };
+    AccessControl.assignRole(accessControlState, caller, user, role);
+  };
+
+  // User Profiles
+  public query ({ caller }) func getCallerUserProfile() : async ?UserProfile {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can add structures");
+      Runtime.trap("Unauthorized: Guests cannot query profiles. Register as regular user.");
+    };
+    userProfiles.get(caller);
+  };
+
+  public shared ({ caller }) func saveCallerUserProfile(profile : UserProfile) : async () {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only regular users can save profiles. Anonymous users not allowed.");
+    };
+    userProfiles.add(caller, profile);
+  };
+
+  public query ({ caller }) func getUserProfile(user : Principal) : async ?UserProfile {
+    if (caller != user and not AccessControl.isAdmin(accessControlState, caller)) {
+      Runtime.trap("Unauthorized: Can only view your own profile");
+    };
+    userProfiles.get(user);
+  };
+
+  // Structure CRUD Operations
+  public shared ({ caller }) func addStructure(structure : Structure) : async () {
+    if (not AccessControl.hasPermission(accessControlState, caller, #user)) {
+      Runtime.trap("Unauthorized: Only regular users can add structures. Anonymous users not allowed.");
     };
     if (structures.containsKey(structure.id)) {
       Runtime.trap("Structure already exists");
@@ -124,7 +135,7 @@ actor {
 
   public shared ({ caller }) func updateStructure(structure : Structure) : async () {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can update structures");
+      Runtime.trap("Unauthorized: Only regular users can update structures. Anonymous users not allowed.");
     };
     if (not structures.containsKey(structure.id)) {
       Runtime.trap("Structure does not exist");
@@ -134,7 +145,7 @@ actor {
 
   public shared ({ caller }) func deleteStructure(id : Text) : async () {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can delete structures");
+      Runtime.trap("Unauthorized: Only regular users can delete structures. Anonymous users not allowed.");
     };
     if (not structures.containsKey(id)) {
       Runtime.trap("Structure does not exist");
@@ -150,13 +161,14 @@ actor {
   };
 
   public query ({ caller }) func listStructures() : async [Structure] {
-    structures.values().toArray().sort();
+    structures.values().toArray();
   };
 
   public query ({ caller }) func listStructuresByLocation(location : Text) : async [Structure] {
     structures.values().toArray().filter(func(s) { s.location == location });
   };
 
+  // Damage CRUD Operations
   public shared ({ caller }) func addDamageEntry(entry : DamageEntry) : async () {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
       Runtime.trap("Unauthorized: Only users can add damage entries");
@@ -169,7 +181,7 @@ actor {
 
   public shared ({ caller }) func updateDamageEntry(entry : DamageEntry) : async () {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can update damage entries");
+      Runtime.trap("Unauthorized: Only regular users can update damage entries. Anonymous users not allowed.");
     };
     if (not damages.containsKey(entry.id)) {
       Runtime.trap("Damage entry does not exist");
@@ -179,7 +191,7 @@ actor {
 
   public shared ({ caller }) func deleteDamageEntry(id : Text) : async () {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can delete damage entries");
+      Runtime.trap("Unauthorized: Only regular users can delete damage entries. Anonymous users not allowed.");
     };
     if (not damages.containsKey(id)) {
       Runtime.trap("Damage entry does not exist");
@@ -195,20 +207,7 @@ actor {
   };
 
   public query ({ caller }) func listDamageEntriesByStructure(structureId : Text) : async [DamageEntry] {
-    damages.values().toArray().filter(func(entry) { entry.structureId == structureId }).sort();
-  };
-
-  public query ({ caller }) func getPreservationRecommendations(category : DamageCategory) : async Text {
-    switch (category) {
-      case (#foundation) { "Regularly inspect and repair cracks. Ensure proper drainage to avoid water accumulation." };
-      case (#walls) {
-        "Maintain proper ventilation, monitor for cracks, and use compatible materials during repairs.";
-      };
-      case (#roof) {
-        "Check for leaks and damaged materials. Maintain adequate slope for proper water drainage.";
-      };
-      case (_) { "No specific advice. Maintain regular inspections and address any issues promptly." };
-    };
+    damages.values().toArray().filter(func(entry) { entry.structureId == structureId });
   };
 
   public type DamageSeverityCount = {
@@ -235,27 +234,33 @@ actor {
     { low = lowCount; medium = mediumCount; high = highCount };
   };
 
-  // ########## NEW IMAGE DEFECT FUNCTIONS ##########
+  public query ({ caller }) func getPreservationRecommendations(category : DamageCategory) : async Text {
+    switch (category) {
+      case (#foundation) { "Regularly inspect and repair cracks. Ensure proper drainage to avoid water accumulation." };
+      case (#walls) {
+        "Maintain proper ventilation, monitor for cracks, and use compatible materials during repairs.";
+      };
+      case (#roof) {
+        "Check for leaks and damaged materials. Maintain adequate slope for proper water drainage.";
+      };
+      case (_) { "No specific advice. Maintain regular inspections and address any issues promptly." };
+    };
+  };
 
-  public shared ({ caller }) func saveImageDefects(structureId : Text, photoHash : Text, defects : [ImageDefect]) : async () {
+  // Image Defect Operations
+  public shared ({ caller }) func saveImageDefects(_structureId : Text, photoHash : Text, defects : [ImageDefect]) : async () {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can add image defects");
+      Runtime.trap("Unauthorized: Only regular users can add image defects. Anonymous users not allowed.");
     };
     imageDefects.add(photoHash, defects);
   };
 
   public query ({ caller }) func getImageDefectsByStructure(structureId : Text) : async [ImageDefect] {
     let allDefects = List.empty<ImageDefect>();
-    for ((photoHash, defects) in imageDefects.entries()) {
-      if (not defects.isEmpty()) {
-        // Only process non-empty defect arrays
-        let nonEmptyDefects = defects.filter(
-          func(defect) {
-            defect.structureId == structureId;
-          }
-        );
-        if (not nonEmptyDefects.isEmpty()) {
-          allDefects.addAll(nonEmptyDefects.values());
+    for (defects in imageDefects.values()) {
+      for (defect in defects.values()) {
+        if (defect.structureId == structureId) {
+          allDefects.add(defect);
         };
       };
     };
@@ -271,7 +276,7 @@ actor {
 
   public shared ({ caller }) func deleteImageDefectsForPhoto(photoHash : Text) : async () {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can delete image defects");
+      Runtime.trap("Unauthorized: Only regular users can delete image defects. Anonymous users not allowed.");
     };
     imageDefects.remove(photoHash);
   };

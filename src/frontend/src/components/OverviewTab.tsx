@@ -36,6 +36,7 @@ import {
   type DetectedDefect,
   analyzeImageForDefects,
 } from "../hooks/useImageDefectAnalysis";
+import { useInternetIdentity } from "../hooks/useInternetIdentity";
 import { useUpdateStructure } from "../hooks/useQueries";
 import { StorageClient } from "../utils/StorageClient";
 import {
@@ -237,8 +238,10 @@ export function OverviewTab({ structure }: OverviewTabProps) {
   const photosLoadedRef = useRef<string | null>(null);
   const [loadingPhotos, setLoadingPhotos] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { uploadPhoto, isUploading, uploadProgress } = useBlobStorage();
+  const { uploadPhoto, isUploading, uploadProgress, uploadError } =
+    useBlobStorage();
   const { actor, isFetching: actorFetching } = useActor();
+  const { identity } = useInternetIdentity();
 
   // Reset photos state when the structure changes so we don't show stale data
   // biome-ignore lint/correctness/useExhaustiveDependencies: intentionally run only when structure.id changes
@@ -393,38 +396,39 @@ export function OverviewTab({ structure }: OverviewTabProps) {
       toast.error("Please select an image file");
       return;
     }
+    if (!identity) {
+      toast.error("Please log in to upload photos");
+      e.target.value = "";
+      return;
+    }
     const result = await uploadPhoto(file);
     if (result) {
       toast.success("Photo uploaded");
       await addPhotoWithAnalysis(file, result);
     } else {
-      const url = URL.createObjectURL(file);
-      const photo: UploadedPhoto = {
-        hash: crypto.randomUUID(),
-        url,
-        name: file.name,
-      };
-      toast.success("Photo added (local preview)");
-      await addPhotoWithAnalysis(file, photo);
+      toast.error(
+        uploadError ||
+          "Upload failed. Please check your connection and try again.",
+      );
     }
     e.target.value = "";
   }
 
   async function handleCameraCapture(file: File) {
     setCameraOpen(false);
+    if (!identity) {
+      toast.error("Please log in to upload photos");
+      return;
+    }
     const result = await uploadPhoto(file);
     if (result) {
       toast.success("Photo captured and uploaded");
       await addPhotoWithAnalysis(file, result);
     } else {
-      const url = URL.createObjectURL(file);
-      const photo: UploadedPhoto = {
-        hash: crypto.randomUUID(),
-        url,
-        name: file.name,
-      };
-      toast.success("Photo captured");
-      await addPhotoWithAnalysis(file, photo);
+      toast.error(
+        uploadError ||
+          "Upload failed. Please check your connection and try again.",
+      );
     }
   }
 
@@ -549,6 +553,8 @@ export function OverviewTab({ structure }: OverviewTabProps) {
               variant="outline"
               size="sm"
               onClick={() => setCameraOpen(true)}
+              disabled={!identity}
+              title={!identity ? "Please log in to upload photos" : undefined}
               className="gap-1.5 h-8 font-body text-xs"
             >
               <Camera className="w-3.5 h-3.5" />
@@ -559,7 +565,8 @@ export function OverviewTab({ structure }: OverviewTabProps) {
               variant="outline"
               size="sm"
               onClick={() => fileInputRef.current?.click()}
-              disabled={isUploading}
+              disabled={isUploading || !identity}
+              title={!identity ? "Please log in to upload photos" : undefined}
               className="gap-1.5 h-8 font-body text-xs"
             >
               <Upload className="w-3.5 h-3.5" />

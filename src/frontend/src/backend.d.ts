@@ -70,6 +70,7 @@ export interface backendInterface {
     addDamageEntry(entry: DamageEntry): Promise<void>;
     addStructure(structure: Structure): Promise<void>;
     assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
+    assignRole(user: Principal, role: UserRole): Promise<void>;
     deleteDamageEntry(id: string): Promise<void>;
     deleteImageDefectsForPhoto(photoHash: string): Promise<void>;
     deleteStructure(id: string): Promise<void>;
@@ -82,12 +83,13 @@ export interface backendInterface {
     getPreservationRecommendations(category: DamageCategory): Promise<string>;
     getStructure(id: string): Promise<Structure>;
     getUserProfile(user: Principal): Promise<UserProfile | null>;
+    getUserRole(): Promise<UserRole>;
     isCallerAdmin(): Promise<boolean>;
     listDamageEntriesByStructure(structureId: string): Promise<Array<DamageEntry>>;
     listStructures(): Promise<Array<Structure>>;
     listStructuresByLocation(location: string): Promise<Array<Structure>>;
     saveCallerUserProfile(profile: UserProfile): Promise<void>;
-    saveImageDefects(structureId: string, photoHash: string, defects: Array<ImageDefect>): Promise<void>;
+    saveImageDefects(_structureId: string, photoHash: string, defects: Array<ImageDefect>): Promise<void>;
     updateDamageEntry(entry: DamageEntry): Promise<void>;
     updateStructure(structure: Structure): Promise<void>;
 }
